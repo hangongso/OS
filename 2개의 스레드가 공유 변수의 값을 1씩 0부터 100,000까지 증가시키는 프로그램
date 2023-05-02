@@ -1,0 +1,41 @@
+#define HAVE_STRUCT_TIMESPEC
+#define _CRT_SECURE_NO_WARNINGS
+#include <pthread.h>
+#include <stdio.h>
+#include <string.h>
+
+pthread_t tid[2];
+int counter = 0;
+pthread_mutex_t lock;
+
+void* adder(void* VAL)
+{
+    printf("%d, start counter value is %d\n", *(int*)VAL, counter);
+
+    for (unsigned long i = 0; i < 100000; i++)
+        counter += 1;
+
+    printf("%d, end counter value is %d\n", *(int*)VAL, counter);
+
+    return NULL;
+}
+
+int main(void)
+{
+    int i = 0;
+    int error;
+
+    while (i < 2) {
+        error = pthread_create(&(tid[i]), NULL,
+            &adder, &i);
+        if (error != 0)
+            printf("* Thread can't be created :[%s]",
+                strerror(error));
+        i++;
+    }
+
+    pthread_join(tid[0], NULL);
+    pthread_join(tid[1], NULL);
+
+    return 0;
+}
