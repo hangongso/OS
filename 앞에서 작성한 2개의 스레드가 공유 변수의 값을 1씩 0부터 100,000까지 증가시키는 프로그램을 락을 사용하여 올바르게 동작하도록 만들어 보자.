@@ -1,0 +1,57 @@
+#define HAVE_STRUCT_TIMESPEC
+#define _CRT_SECURE_NO_WARNINGS
+#include <stdio.h>
+#include <pthread.h>
+
+#define NUM_THREADS 2
+#define TARGET_VALUE 100000
+
+int shared_value = 0;
+pthread_mutex_t lock;
+
+void* increment(void* thread_id) {
+    long tid = (long)thread_id;
+    while (1) {
+        pthread_mutex_lock(&lock);  // acquire the lock
+        if (shared_value < TARGET_VALUE) {
+            shared_value++;
+            printf("Thread %ld incremented the value to %d.\n", tid, shared_value);
+        }
+        else {
+            pthread_mutex_unlock(&lock);  // release the lock before exiting the loop
+            break;
+        }
+        pthread_mutex_unlock(&lock);  // release the lock after updating the shared value
+    }
+    pthread_exit(NULL);
+}
+
+int main() {
+    pthread_t threads[NUM_THREADS];
+    int status;
+    long i;
+
+    // Initialize the lock
+    pthread_mutex_init(&lock, NULL);
+
+    // Create threads
+    for (i = 0; i < NUM_THREADS; i++) {
+        status = pthread_create(&threads[i], NULL, increment, (void*)i);
+        if (status) {
+            printf("Error creating thread %ld. Exiting program.\n", i);
+            exit(-1);
+        }
+    }
+
+    // Join threads
+    for (i = 0; i < NUM_THREADS; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    // Destroy the lock
+    pthread_mutex_destroy(&lock);
+
+    printf("Final value: %d\n", shared_value);
+
+    return 0;
+}
